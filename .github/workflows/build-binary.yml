@@ -34,7 +34,6 @@ jobs:
             --runtime win-x64 `
             --self-contained true `
             -p:Platform=x64 `
-            -p:AssemblyName=LibreHardwareMonitor `
             --output ./publish/win-x64
 
       - name: Verify executable
