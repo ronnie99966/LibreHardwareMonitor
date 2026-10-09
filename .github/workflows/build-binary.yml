@@ -6,12 +6,6 @@ on:
   push:
     branches:
       - master
-    paths:
-      - "LibreHardwareMonitor.Windows.Forms/**"
-      - "LibreHardwareMonitorLib/**"
-      - "Aga.Controls/**"
-      - "Directory.Build.props"
-      - ".github/workflows/build-binary.yml"
 
 permissions:
   contents: read
@@ -40,28 +34,21 @@ jobs:
             --runtime win-x64 `
             --self-contained true `
             -p:Platform=x64 `
+            -p:AssemblyName=LibreHardwareMonitor `
             --output ./publish/win-x64
 
-      - name: Rename executable
+      - name: Verify executable
         shell: pwsh
         run: |
-          $dir = "./publish/win-x64"
-          $source = Join-Path $dir "LibreHardwareMonitor.Windows.Forms.exe"
-          $target = Join-Path $dir "LibreHardwareMonitor.exe"
+          $exe = "./publish/win-x64/LibreHardwareMonitor.exe"
 
-          if (!(Test-Path $source)) {
-            throw "Build output EXE not found: $source"
+          if (!(Test-Path $exe)) {
+            throw "EXE not found: $exe"
           }
 
-          Move-Item -Path $source -Destination $target
+          Write-Host "Build successful: $exe"
 
-          if (!(Test-Path $target)) {
-            throw "Renamed EXE not found: $target"
-          }
-
-          Write-Host "Binary ready: $target"
-
-      - name: Upload binary artifact
+      - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
           name: LibreHardwareMonitor-Windows-x64
