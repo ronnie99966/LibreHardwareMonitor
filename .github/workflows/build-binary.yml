@@ -1,56 +1,28 @@
 
-name: Build Windows Binary
+- name: Publish Windows x64
+  shell: pwsh
+  run: |
+    dotnet publish `
+      LibreHardwareMonitor.Windows.Forms/LibreHardwareMonitor.Windows.Forms.csproj `
+      --configuration Release `
+      --framework net10.0-windows `
+      --runtime win-x64 `
+      --self-contained true `
+      -p:Platform=x64 `
+      -p:AssemblyName=LibreHardwareMonitor `
+      --output ./publish/win-x64
 
-on:
-  workflow_dispatch:
-  push:
-    branches: [master]
-    paths:
-      - "LibreHardwareMonitor.Windows.Forms/**"
-      - "LibreHardwareMonitorLib/**"
-      - "Aga.Controls/**"
-      - "Directory.Build.props"
-      - ".github/workflows/build-binary.yml"
+- name: Verify executable
+  shell: pwsh
+  run: |
+    $exe = "./publish/win-x64/LibreHardwareMonitor.exe"
+    if (!(Test-Path $exe)) {
+      throw "EXE not found: $exe"
+    }
 
-permissions:
-  contents: read
-
-jobs:
-  build:
-    runs-on: windows-2022
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup .NET 10
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 10.0.x
-
-      - name: Publish Windows x64
-        shell: pwsh
-        run: |
-          dotnet publish `
-            LibreHardwareMonitor.Windows.Forms/LibreHardwareMonitor.Windows.Forms.csproj `
-            --configuration Release `
-            --framework net10.0-windows `
-            --runtime win-x64 `
-            --self-contained true `
-            -p:Platform=x64 `
-            --output ./publish/win-x64
-
-      - name: Verify executable
-        shell: pwsh
-        run: |
-          $exe = "./publish/win-x64/LibreHardwareMonitor.Windows.Forms.exe"
-          if (!(Test-Path $exe)) {
-            throw "EXE not found: $exe"
-          }
-
-      - name: Upload Binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: LibreHardwareMonitor-Windows-x64
-          path: publish/win-x64/
-          if-no-files-found: error
+- name: Upload Binary
+  uses: actions/upload-artifact@v4
+  with:
+    name: LibreHardwareMonitor-Windows-x64
+    path: publish/win-x64/
+    if-no-files-found: error
