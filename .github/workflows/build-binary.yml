@@ -1,28 +1,70 @@
 
-- name: Publish Windows x64
-  shell: pwsh
-  run: |
-    dotnet publish `
-      LibreHardwareMonitor.Windows.Forms/LibreHardwareMonitor.Windows.Forms.csproj `
-      --configuration Release `
-      --framework net10.0-windows `
-      --runtime win-x64 `
-      --self-contained true `
-      -p:Platform=x64 `
-      -p:AssemblyName=LibreHardwareMonitor `
-      --output ./publish/win-x64
+name: Build Windows Binary
 
-- name: Verify executable
-  shell: pwsh
-  run: |
-    $exe = "./publish/win-x64/LibreHardwareMonitor.exe"
-    if (!(Test-Path $exe)) {
-      throw "EXE not found: $exe"
-    }
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - "LibreHardwareMonitor.Windows.Forms/**"
+      - "LibreHardwareMonitorLib/**"
+      - "Aga.Controls/**"
+      - "Directory.Build.props"
+      - ".github/workflows/build-binary.yml"
 
-- name: Upload Binary
-  uses: actions/upload-artifact@v4
-  with:
-    name: LibreHardwareMonitor-Windows-x64
-    path: publish/win-x64/
-    if-no-files-found: error
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Windows x64
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Publish Windows x64
+        shell: pwsh
+        run: |
+          dotnet publish `
+            LibreHardwareMonitor.Windows.Forms/LibreHardwareMonitor.Windows.Forms.csproj `
+            --configuration Release `
+            --framework net10.0-windows `
+            --runtime win-x64 `
+            --self-contained true `
+            -p:Platform=x64 `
+            --output ./publish/win-x64
+
+      - name: Rename executable
+        shell: pwsh
+        run: |
+          $dir = "./publish/win-x64"
+          $source = Join-Path $dir "LibreHardwareMonitor.Windows.Forms.exe"
+          $target = Join-Path $dir "LibreHardwareMonitor.exe"
+
+          if (!(Test-Path $source)) {
+            throw "Build output EXE not found: $source"
+          }
+
+          Move-Item -Path $source -Destination $target
+
+          if (!(Test-Path $target)) {
+            throw "Renamed EXE not found: $target"
+          }
+
+          Write-Host "Binary ready: $target"
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LibreHardwareMonitor-Windows-x64
+          path: publish/win-x64/
+          if-no-files-found: error
+          retention-days: 30
